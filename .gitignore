@@ -1,0 +1,36 @@
+# .NET / C#
+bin/
+obj/
+publish/
+*.user
+*.suo
+[Dd]ebug/
+[Rr]elease/
+
+# WiX
+installer/.wix/
+installer/*.msi
+installer/*.wixpdb
+installer/*.wixobj
+installer/*.log
+
+# Release archives
+installer/*.zip
+
+# Generated installer staging
+installer/staging/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE
+.vs/
+.vscode/
+.idea/
+**/Properties/launchSettings.json
+
+# Screenshots (except logo)
+*.png
+!src/EatonUsbController.App/eaton-logo.png

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EatonUsbController.App/EatonUsbController.App.csproj" />
+    <Project Path="src/EatonUsbController.Core/EatonUsbController.Core.csproj" />
+    <Project Path="src/EatonUsbController.Service/EatonUsbController.Service.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EatonUsbController.Tests/EatonUsbController.Tests.csproj" />
+  </Folder>
+</Solution>

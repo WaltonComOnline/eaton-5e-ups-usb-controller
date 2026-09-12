@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="Eaton 5E Controller"
+           Version="6.2.1.0"
+           Manufacturer="WaltonComOnline"
+           UpgradeCode="A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Eaton 5E Controller is already installed."
+                  Schedule="afterInstallValidate" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Icon for Add/Remove Programs -->
+    <Icon Id="Eaton5E.ico" SourceFile="$(var.IconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="Eaton5E.ico" />
+
+    <!-- Properties for UI -->
+    <Property Id="INSTALL_WINUSB" Value="1" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Eaton 5E Controller" />
+
+    <ui:WixUI Id="WixUI_Minimal" />
+
+    <!-- Custom action to set launch target and launch app on exit -->
+    <SetProperty Id="WixShellExecTarget" Value="[DIR_App]EatonUsbController.App.exe" After="CostFinalize" Sequence="ui" />
+    <CustomAction Id="LaunchApplication" DllEntry="WixShellExec" BinaryRef="Wix4UtilCA_X64" Impersonate="yes" />
+
+    <!-- Directory structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="EatonUsbController">
+        <Directory Id="DIR_App" Name="app" />
+        <Directory Id="DIR_Service" Name="service" />
+        <Directory Id="DIR_Tools" Name="tools" />
+        <Directory Id="DIR_Nut" Name="nut">
+          <Directory Id="DIR_NutBin" Name="bin" />
+          <Directory Id="DIR_NutSbin" Name="sbin" />
+          <Directory Id="DIR_NutEtc" Name="etc" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <!-- ===== SERVICE FILES (excluding appsettings.json — handled separately) ===== -->
+    <ComponentGroup Id="ServiceFiles" Directory="DIR_Service">
+      <Files Include="$(var.ServicePublishDir)\**">
+        <Exclude Files="$(var.ServicePublishDir)\appsettings.json" />
+        <Exclude Files="$(var.ServicePublishDir)\appsettings.Development.json" />
+        <Exclude Files="$(var.ServicePublishDir)\e_sqlite3.dll" />
+      </Files>
+    </ComponentGroup>
+
+    <Component Id="NativeSqlite" Directory="DIR_Service" Guid="F50882CF-3181-4B19-A1EF-63B35835A181">
+      <File Id="NativeSqliteFile" Source="$(var.ServicePublishDir)\e_sqlite3.dll"
+        Name="e_sqlite3.dll" DefaultLanguage="0" KeyPath="yes" />
+    </Component>
+
+    <!-- ===== APPSETTINGS — NeverOverwrite to preserve user config on upgrade ===== -->
+    <Component Id="AppSettingsJson" Directory="DIR_Service" Guid="9757D372-E162-42C2-840A-E7436F084D64" NeverOverwrite="yes">
+      <File Id="appsettings.json" Source="$(var.ServicePublishDir)\appsettings.json" Name="appsettings.json" KeyPath="yes" />
+    </Component>
+    <Component Id="AppSettingsSample" Directory="DIR_Service" Guid="C095E4AE-7BE7-4D73-9D67-E69806420F09">
+      <File Id="appsettings.json.sample" Source="$(var.ServicePublishDir)\appsettings.json" Name="appsettings.json.sample" KeyPath="yes" />
+    </Component>
+
+    <!-- ===== APP FILES ===== -->
+    <ComponentGroup Id="AppFiles" Directory="DIR_App">
+      <Files Include="$(var.AppPublishDir)\**" />
+    </ComponentGroup>
+
+    <!-- ===== NUT BIN FILES ===== -->
+    <ComponentGroup Id="NutBinFiles" Directory="DIR_NutBin">
+      <Files Include="$(var.NutStagingDir)\bin\**" />
+    </ComponentGroup>
+
+    <!-- ===== NUT SBIN FILES ===== -->
+    <ComponentGroup Id="NutSbinFiles" Directory="DIR_NutSbin">
+      <Files Include="$(var.NutStagingDir)\sbin\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="NutLegalFiles" Directory="DIR_Nut">
+      <Files Include="$(var.NutStagingDir)\*.txt" />
+    </ComponentGroup>
+
+    <!-- ===== NUT CONFIG FILES (NeverOverwrite — preserve user edits on upgrade) ===== -->
+    <Component Id="NutUpsConf" Directory="DIR_NutEtc" Guid="F1A2B3C4-D5E6-7890-ABCD-200000000001" NeverOverwrite="yes">
+      <File Id="ups.conf" Source="$(var.NutStagingDir)\etc\ups.conf" Name="ups.conf" KeyPath="yes" />
+    </Component>
+    <Component Id="NutUpsdConf" Directory="DIR_NutEtc" Guid="F1A2B3C4-D5E6-7890-ABCD-200000000002" NeverOverwrite="yes">
+      <File Id="upsd.conf" Source="$(var.NutStagingDir)\etc\upsd.conf" Name="upsd.conf" KeyPath="yes" />
+    </Component>
+    <Component Id="NutUpsdUsers" Directory="DIR_NutEtc" Guid="F1A2B3C4-D5E6-7890-ABCD-200000000003" NeverOverwrite="yes">
+      <File Id="upsd.users" Source="$(var.NutStagingDir)\etc\upsd.users" Name="upsd.users" KeyPath="yes" />
+    </Component>
+
+    <!-- ===== NUT CONFIG SAMPLE FILES (always overwritten — reference defaults) ===== -->
+    <Component Id="NutUpsConfSample" Directory="DIR_NutEtc" Guid="F1A2B3C4-D5E6-7890-ABCD-200000000011">
+      <File Id="ups.conf.sample" Source="$(var.NutStagingDir)\etc\ups.conf" Name="ups.conf.sample" KeyPath="yes" />
+    </Component>
+    <Component Id="NutUpsdConfSample" Directory="DIR_NutEtc" Guid="F1A2B3C4-D5E6-7890-ABCD-200000000012">
+      <File Id="upsd.conf.sample" Source="$(var.NutStagingDir)\etc\upsd.conf" Name="upsd.conf.sample" KeyPath="yes" />
+    </Component>
+    <Component Id="NutUpsdUsersSample" Directory="DIR_NutEtc" Guid="F1A2B3C4-D5E6-7890-ABCD-200000000013">
+      <File Id="upsd.users.sample" Source="$(var.NutStagingDir)\etc\upsd.users" Name="upsd.users.sample" KeyPath="yes" />
+    </Component>
+
+    <!-- ===== WINUSB TOOLS ===== -->
+    <ComponentGroup Id="WinUSBToolFiles" Directory="DIR_Tools">
+      <Files Include="$(var.ToolsStagingDir)\**" />
+    </ComponentGroup>
+
+    <!-- ===== SHORTCUTS ===== -->
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="B1C2D3E4-F5A6-7890-1234-567890ABCDEF">
+      <Shortcut Id="DesktopSC"
+                Name="Eaton 5E Controller"
+                Description="Eaton 5E UPS Monitoring and Management"
+                Target="[DIR_App]EatonUsbController.App.exe"
+                WorkingDirectory="DIR_App"
+                Icon="Eaton5E.ico" />
+      <RegistryValue Root="HKCU" Key="Software\Eaton5EController" Name="DesktopSC" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="C2D3E4F5-A6B7-8901-2345-67890ABCDEF0">
+      <Shortcut Id="StartMenuSC"
+                Name="Eaton 5E Controller"
+                Description="Eaton 5E UPS Monitoring and Management"
+                Target="[DIR_App]EatonUsbController.App.exe"
+                WorkingDirectory="DIR_App"
+                Icon="Eaton5E.ico" />
+      <RegistryValue Root="HKCU" Key="Software\Eaton5EController" Name="StartMenuSC" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- ===== SCRIPTS ===== -->
+    <Component Id="SetupScript" Directory="DIR_Tools" Guid="E20AF353-108B-4C4D-AB45-8584ED86BD91">
+      <File Id="Setup.ps1" Source="$(var.SetupScript)" Name="Setup.ps1" />
+      <RegistryValue Root="HKLM" Key="Software\Eaton5EController" Name="SetupScript" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="WinUSBDriverScript" Directory="DIR_Tools" Guid="6BE06DC6-C72E-41E7-AB5C-FDB3381D8D08">
+      <File Id="InstallWinUSBDriver.ps1" Source="$(var.WinUSBDriverScript)" Name="Install-WinUSBDriver.ps1" />
+      <RegistryValue Root="HKLM" Key="Software\Eaton5EController" Name="WinUSBScript" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="LegacyRootCleanup" Directory="INSTALLFOLDER" Guid="D42352C0-821F-4D0B-BFD4-D841338FD07D">
+      <RemoveFile Id="RemoveLegacySetupScript" Name="Setup.ps1" On="install" />
+      <RemoveFile Id="RemoveLegacyWinUSBScript" Name="Install-WinUSBDriver.ps1" On="install" />
+      <RemoveFile Id="RemoveLegacyAppSettings" Name="appsettings.json" On="install" />
+      <RemoveFile Id="RemoveLegacyDevelopmentSettings" Name="appsettings.Development.json" On="install" />
+      <RegistryValue Root="HKLM" Key="Software\Eaton5EController" Name="LegacyRootCleanup" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- ===== CUSTOM ACTIONS ===== -->
+
+    <!-- Preserve v6.2.0 credentials and stop processes before its files are removed. -->
+    <CustomAction Id="PrepareUpgradeBackup" Directory="SystemFolder"
+            ExeCommand="&quot;[SystemFolder]cmd.exe&quot; /d /c if not exist &quot;[CommonAppDataFolder]EatonUsbController&quot; mkdir &quot;[CommonAppDataFolder]EatonUsbController&quot;"
+            Execute="immediate" Return="check" />
+
+    <CustomAction Id="BackupAppSettings" Directory="SystemFolder"
+            ExeCommand="&quot;[SystemFolder]cmd.exe&quot; /d /c if exist &quot;[INSTALLFOLDER]appsettings.json&quot; copy /y &quot;[INSTALLFOLDER]appsettings.json&quot; &quot;[CommonAppDataFolder]EatonUsbController\upgrade-appsettings.json&quot;"
+            Execute="immediate" Return="check" />
+
+    <CustomAction Id="BackupNutUsers" Directory="SystemFolder"
+            ExeCommand="&quot;[SystemFolder]cmd.exe&quot; /d /c if exist &quot;[INSTALLFOLDER]nut\etc\upsd.users&quot; copy /y &quot;[INSTALLFOLDER]nut\etc\upsd.users&quot; &quot;[CommonAppDataFolder]EatonUsbController\upgrade-upsd.users&quot;"
+            Execute="immediate" Return="check" />
+
+    <CustomAction Id="StopLegacyProcesses" Directory="SystemFolder"
+            ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -Command &quot;Stop-Service EatonUsbController -Force -ErrorAction SilentlyContinue; Get-Process usbhid-ups,upsd -ErrorAction SilentlyContinue | Stop-Process -Force&quot;"
+            Execute="immediate" Return="ignore" />
+
+    <!-- ── WinUSB driver check (immediate, sets property) ── -->
+    <SetProperty Id="CheckWinUSBStatus" Before="CheckWinUSBStatus" Sequence="execute"
+                 Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[DIR_Tools]Install-WinUSBDriver.ps1&quot; -Action Check" />
+    <CustomAction Id="CheckWinUSBStatus" DllEntry="WixQuietExec64" BinaryRef="Wix4UtilCA_X64"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <!-- ── WinUSB driver install (deferred, elevated) ── -->
+    <SetProperty Id="RunWinUSBInstall" Before="RunWinUSBInstall" Sequence="execute"
+                 Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[DIR_Tools]Install-WinUSBDriver.ps1&quot; -Action Install -ToolsDir &quot;[DIR_Tools]\&quot;" />
+    <CustomAction Id="RunWinUSBInstall" DllEntry="WixQuietExec64" BinaryRef="Wix4UtilCA_X64"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <!-- ── WinUSB rollback (if install is cancelled/fails after driver swap) ── -->
+    <SetProperty Id="RollbackWinUSB" Before="RollbackWinUSB" Sequence="execute"
+                 Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[DIR_Tools]Install-WinUSBDriver.ps1&quot; -Action Rollback" />
+    <CustomAction Id="RollbackWinUSB" DllEntry="WixQuietExec64" BinaryRef="Wix4UtilCA_X64"
+                  Execute="rollback" Impersonate="no" Return="ignore" />
+
+    <!-- ── Post-install: register service and create the NUT junction ── -->
+    <!-- Fresh install -->
+    <SetProperty Id="RunInstallSetup" Before="RunInstallSetup" Sequence="execute"
+                 Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[DIR_Tools]Setup.ps1&quot; -Action Install -InstallDir &quot;[INSTALLFOLDER]\&quot;" />
+    <CustomAction Id="RunInstallSetup" DllEntry="WixQuietExec64" BinaryRef="Wix4UtilCA_X64"
+                  Execute="deferred" Impersonate="no" Return="check" />
+
+    <!-- Upgrade -->
+    <SetProperty Id="RunUpgradeSetup" Before="RunUpgradeSetup" Sequence="execute"
+                 Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[DIR_Tools]Setup.ps1&quot; -Action Upgrade -InstallDir &quot;[INSTALLFOLDER]\&quot;" />
+    <CustomAction Id="RunUpgradeSetup" DllEntry="WixQuietExec64" BinaryRef="Wix4UtilCA_X64"
+                  Execute="deferred" Impersonate="no" Return="check" />
+
+    <!-- Rollback for Setup (undo service/junction/task if install fails) -->
+    <SetProperty Id="RollbackSetup" Before="RollbackSetup" Sequence="execute"
+                 Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[DIR_Tools]Setup.ps1&quot; -Action Rollback -InstallDir &quot;[INSTALLFOLDER]\&quot;" />
+    <CustomAction Id="RollbackSetup" DllEntry="WixQuietExec64" BinaryRef="Wix4UtilCA_X64"
+                  Execute="rollback" Impersonate="no" Return="ignore" />
+
+    <!-- Pre-uninstall: stop service and remove application-managed system resources -->
+    <SetProperty Id="RunUninstallSetup" Before="RunUninstallSetup" Sequence="execute"
+                 Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[DIR_Tools]Setup.ps1&quot; -Action Uninstall -InstallDir &quot;[INSTALLFOLDER]\&quot;" />
+    <CustomAction Id="RunUninstallSetup" DllEntry="WixQuietExec64" BinaryRef="Wix4UtilCA_X64"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="PrepareUpgradeBackup" Before="BackupAppSettings" Condition="WIX_UPGRADE_DETECTED" />
+      <Custom Action="BackupAppSettings" Before="BackupNutUsers" Condition="WIX_UPGRADE_DETECTED" />
+      <Custom Action="BackupNutUsers" Before="StopLegacyProcesses" Condition="WIX_UPGRADE_DETECTED" />
+      <Custom Action="StopLegacyProcesses" Before="InstallValidate" Condition="WIX_UPGRADE_DETECTED" />
+      <!-- Fresh install: WinUSB check → rollback point → WinUSB install → setup rollback point → setup -->
+      <Custom Action="CheckWinUSBStatus" After="InstallFiles" Condition="NOT Installed AND INSTALL_WINUSB = &quot;1&quot;" />
+      <Custom Action="RollbackWinUSB" After="CheckWinUSBStatus" Condition="NOT Installed AND INSTALL_WINUSB = &quot;1&quot;" />
+      <Custom Action="RunWinUSBInstall" After="RollbackWinUSB" Condition="NOT Installed AND INSTALL_WINUSB = &quot;1&quot;" />
+      <Custom Action="RollbackSetup" After="RunWinUSBInstall" Condition="NOT Installed" />
+      <Custom Action="RunInstallSetup" After="RollbackSetup" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="RunUpgradeSetup" After="RollbackSetup" Condition="NOT Installed AND WIX_UPGRADE_DETECTED" />
+      <!-- Uninstall -->
+      <Custom Action="RunUninstallSetup" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+
+    <!-- ===== FEATURE ===== -->
+    <Feature Id="Complete" Title="Eaton 5E Controller" Level="1">
+      <ComponentGroupRef Id="ServiceFiles" />
+      <ComponentRef Id="NativeSqlite" />
+      <ComponentRef Id="AppSettingsJson" />
+      <ComponentRef Id="AppSettingsSample" />
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentGroupRef Id="NutBinFiles" />
+      <ComponentGroupRef Id="NutSbinFiles" />
+      <ComponentGroupRef Id="NutLegalFiles" />
+      <ComponentRef Id="NutUpsConf" />
+      <ComponentRef Id="NutUpsdConf" />
+      <ComponentRef Id="NutUpsdUsers" />
+      <ComponentRef Id="NutUpsConfSample" />
+      <ComponentRef Id="NutUpsdConfSample" />
+      <ComponentRef Id="NutUpsdUsersSample" />
+      <ComponentGroupRef Id="WinUSBToolFiles" />
+      <ComponentRef Id="DesktopShortcut" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="SetupScript" />
+      <ComponentRef Id="WinUSBDriverScript" />
+      <ComponentRef Id="LegacyRootCleanup" />
+    </Feature>
+
+  </Package>
+</Wix>

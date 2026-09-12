@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <Version>6.2.1</Version>
+    <AssemblyVersion>6.2.1.0</AssemblyVersion>
+    <FileVersion>6.2.1.0</FileVersion>
+    <InformationalVersion>6.2.1</InformationalVersion>
+    <Company>WaltonComOnline</Company>
+    <Product>Eaton 5E Controller</Product>
+    <Authors>WaltonComOnline</Authors>
+    <Copyright>Copyright 2026 WaltonComOnline</Copyright>
+  </PropertyGroup>
+
+  <!--
+    CVE-2025-6965 (GHSA-2m69-gcr7-jv3q): SQLite < 3.50.2 memory corruption via crafted SQL where the
+    number of aggregate terms exceeds available columns. SQLitePCLRaw.lib.e_sqlite3 has NO patched
+    release yet (every version <= 2.1.11 is affected, and Microsoft.Data.Sqlite 10.x pulls 2.1.11).
+    Not exploitable here: the app executes only fixed, parameterized queries against a local,
+    single-user database — there is no untrusted SQL surface. Remove this suppression once a
+    SQLitePCLRaw build bundling SQLite >= 3.50.2 ships.
+  -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
+  </ItemGroup>
+</Project>
